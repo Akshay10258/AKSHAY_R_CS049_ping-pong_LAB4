@@ -22,6 +22,9 @@ class GameEngine:
         self.ai_score = 0
         self.font = pygame.font.SysFont("Arial", 30)
 
+        self.target_score = 5  # default (best of 5)
+
+
     def handle_input(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w]:
@@ -66,27 +69,66 @@ class GameEngine:
         screen.blit(player_text, (self.width//4, 20))
         screen.blit(ai_text, (self.width * 3//4, 20))
 
-    def check_game_over(self, screen):
-        if self.player_score >= 5 or self.ai_score >= 5:
-            winner = "Player Wins!" if self.player_score >= 5 else "AI Wins!"
+    def reset_game(self, new_target):
+        """Resets scores, ball position, and sets a new winning score target."""
+        self.player_score = 0
+        self.ai_score = 0
+        self.target_score = new_target
+        self.ball.reset()
 
-            # Draw final state before showing message
+    def check_game_over(self, screen):
+        # Check if either player reached target score
+        if self.player_score >= self.target_score or self.ai_score >= self.target_score:
+            winner = "Player Wins!" if self.player_score >= self.target_score else "AI Wins!"
+
+            # Show winner message briefly
             self.render(screen)
             pygame.display.flip()
-            pygame.time.delay(500)
+            pygame.time.delay(700)
 
-            # Show Game Over text
             font_large = pygame.font.SysFont("Arial", 60, bold=True)
-            text_surface = font_large.render(winner, True, WHITE)
-            text_rect = text_surface.get_rect(center=(self.width // 2, self.height // 2))
+            font_small = pygame.font.SysFont("Arial", 30)
 
-            screen.fill(BLACK)
-            screen.blit(text_surface, text_rect)
+            # Display game-over text
+            screen.fill((0, 0, 0))
+            winner_text = font_large.render(winner, True, WHITE)
+            screen.blit(winner_text, winner_text.get_rect(center=(self.width // 2, self.height // 3)))
+
+            # Display replay options
+            options = [
+                "Press 3 for Best of 3",
+                "Press 5 for Best of 5",
+                "Press 7 for Best of 7",
+                "Press ESC to Exit",
+            ]
+            for i, opt in enumerate(options):
+                opt_text = font_small.render(opt, True, WHITE)
+                screen.blit(opt_text, opt_text.get_rect(center=(self.width // 2, self.height // 2 + i * 40)))
+
             pygame.display.flip()
 
-            # Keep message visible for 3 seconds
-            pygame.time.delay(3000)
+            # Wait for user input
+            waiting = True
+            chosen_target = None
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        return True  # exit game
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_ESCAPE:
+                            return True
+                        elif event.key == pygame.K_3:
+                            chosen_target = 3
+                        elif event.key == pygame.K_5:
+                            chosen_target = 5
+                        elif event.key == pygame.K_7:
+                            chosen_target = 7
 
-            return True  # signal that game is over
+                        if chosen_target:
+                            # Reset game for replay
+                            self.reset_game(chosen_target)
+                            waiting = False
+                            return False  # don't exit main loop, replay continues
+            return True  # default if quit
         return False
-    
+
