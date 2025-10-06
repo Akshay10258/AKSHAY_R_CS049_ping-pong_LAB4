@@ -1,8 +1,9 @@
-import time
 import pygame
 from .paddle import Paddle
 from .ball import Ball
 # Game Engine
+
+pygame.mixer.init()  # Initialize mixer before loading sounds
 
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -24,6 +25,12 @@ class GameEngine:
 
         self.target_score = 5  # default (best of 5)
 
+        # Load sound effects
+        self.sound_paddle_hit = pygame.mixer.Sound("assets/sounds/paddle_hit.wav")
+        self.sound_wall_bounce = pygame.mixer.Sound("assets/sounds/wall_bounce.wav")
+        self.sound_score = pygame.mixer.Sound("assets/sounds/score.wav")
+
+        self.ball.sound_wall_bounce = self.sound_wall_bounce
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
@@ -38,18 +45,24 @@ class GameEngine:
 
         # Check for collisions with paddles immediately after movement
         if self.ball.velocity_x < 0 and self.ball.rect().colliderect(self.player.rect()):
-            self.ball.x = self.player.x + self.player.width  # push ball outside paddle
+            self.ball.x = self.player.x + self.player.width
             self.ball.velocity_x *= -1
+            self.sound_paddle_hit.play()
+
         elif self.ball.velocity_x > 0 and self.ball.rect().colliderect(self.ai.rect()):
             self.ball.x = self.ai.x - self.ball.width
             self.ball.velocity_x *= -1
+            self.sound_paddle_hit.play()
+
 
         # Scoring
         if self.ball.x <= 0:
             self.ai_score += 1
+            self.sound_score.play()
             self.ball.reset()
         elif self.ball.x >= self.width:
             self.player_score += 1
+            self.sound_score.play()
             self.ball.reset()
 
         # AI follows ball
