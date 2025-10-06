@@ -1,7 +1,6 @@
 import pygame
 from .paddle import Paddle
 from .ball import Ball
-
 # Game Engine
 
 WHITE = (255, 255, 255)
@@ -29,9 +28,18 @@ class GameEngine:
             self.player.move(10, self.height)
 
     def update(self):
+        # Move the ball first
         self.ball.move()
-        self.ball.check_collision(self.player, self.ai)
 
+        # Check for collisions with paddles immediately after movement
+        if self.ball.velocity_x < 0 and self.ball.rect().colliderect(self.player.rect()):
+            self.ball.x = self.player.x + self.player.width  # push ball outside paddle
+            self.ball.velocity_x *= -1
+        elif self.ball.velocity_x > 0 and self.ball.rect().colliderect(self.ai.rect()):
+            self.ball.x = self.ai.x - self.ball.width
+            self.ball.velocity_x *= -1
+
+        # Scoring
         if self.ball.x <= 0:
             self.ai_score += 1
             self.ball.reset()
@@ -39,7 +47,9 @@ class GameEngine:
             self.player_score += 1
             self.ball.reset()
 
+        # AI follows ball
         self.ai.auto_track(self.ball, self.height)
+
 
     def render(self, screen):
         # Draw paddles and ball
@@ -53,3 +63,4 @@ class GameEngine:
         ai_text = self.font.render(str(self.ai_score), True, WHITE)
         screen.blit(player_text, (self.width//4, 20))
         screen.blit(ai_text, (self.width * 3//4, 20))
+    
